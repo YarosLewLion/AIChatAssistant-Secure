@@ -1,32 +1,47 @@
 package com.aichat.service;
 
+import com.aichat.config.HuggingFaceConfig;
 import com.aichat.entity.Chat;
 import com.aichat.entity.Message;
 import com.aichat.entity.User;
 import com.aichat.repository.ChatRepository;
 import com.aichat.repository.MessageRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class ChatService {
 
-    @Autowired
-    private ChatRepository chatRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
+    private final RestTemplate restTemplate;
+    private final HuggingFaceConfig huggingFaceConfig;
+    private final ObjectMapper objectMapper;
 
-    @Value("${huggingface.api.token}")
-    private String huggingFaceApiToken;
+    public ChatService(ChatRepository chatRepository,
+                       MessageRepository messageRepository,
+                       RestTemplate restTemplate,
+                       HuggingFaceConfig huggingFaceConfig) {
+        this.chatRepository = chatRepository;
+        this.messageRepository = messageRepository;
+        this.restTemplate = restTemplate;
+        this.huggingFaceConfig = huggingFaceConfig;
+        this.objectMapper = new ObjectMapper();
+    }
 
     public List<Chat> getUserChats(User user) {
         return chatRepository.findByUser(user);
@@ -45,18 +60,17 @@ public class ChatService {
     }
 
     public String getBotResponse(String userMessage, User user) {
-        System.out.println("Получено сообщение от пользователя: " + userMessage);
+        logger.info("Received message from user: {}", userMessage);
 
         String huggingFaceResponse = getHuggingFaceResponse(userMessage);
-        System.out.println("Ответ от Hugging Face API: " + huggingFaceResponse);
+        logger.info("Response from Hugging Face API: {}", huggingFaceResponse);
         return huggingFaceResponse;
     }
 
     private String getHuggingFaceResponse(String userMessage) {
-        RestTemplate restTemplate = new RestTemplate();
         String apiUrl = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + huggingFaceApiToken);
+        headers.set("Authorization", "Bearer " + huggingFaceConfig.getApiKey());
         headers.set("Content-Type", "application/json");
 
         String requestBody = "{\"inputs\": \"" + userMessage + "\", \"parameters\": {\"max_length\": 100, \"temperature\": 0.7, \"top_p\": 0.9}}";
@@ -64,15 +78,11 @@ public class ChatService {
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, String.class);
-            String responseBody = response.getBody();
-            int textStart = responseBody.indexOf("\"generated_text\":\"") + 17;
-            int textEnd = responseBody.indexOf("\"}", textStart);
-            String generatedText = responseBody.substring(textStart, textEnd);
-            return generatedText;
+            JsonNode root = objectMapper.readTree(response.getBody());
+            return root.get(0).get("generated_text").asText();
         } catch (Exception e) {
-            System.out.println("Ошибка при вызове Hugging Face API: " + e.getMessage());
-            e.printStackTrace();
-            return "Извините, я не смог сгенерировать ответ. Попробуйте снова.";
+            logger.error("Error while calling Hugging Face API: {}", e.getMessage(), e);
+            return "Sorry, I couldn't generate a response. Please try again.";
         }
     }
 }

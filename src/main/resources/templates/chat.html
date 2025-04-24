@@ -5,205 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-            overflow: hidden;
-        }
-
-        #chat-container {
-            background: white;
-            width: 100%;
-            max-width: 700px;
-            height: 80vh;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            font-size: 24px;
-            color: #333;
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-            font-weight: 600;
-        }
-
-        #chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message {
-            max-width: 70%;
-            padding: 12px 18px;
-            border-radius: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-            animation: slideIn 0.3s ease-in-out;
-            position: relative;
-        }
-
-        @keyframes slideIn {
-            0% { opacity: 0; transform: translateY(10px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .user-message {
-            align-self: flex-end;
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            color: white;
-            border-radius: 15px 15px 5px 15px;
-        }
-
-        .bot-message {
-            align-self: flex-start;
-            background: #f1f1f1;
-            color: #333;
-            border-radius: 15px 15px 15px 5px;
-        }
-
-        #typing-indicator {
-            display: none;
-            color: #999;
-            font-style: italic;
-            font-size: 14px;
-            padding: 10px 20px;
-        }
-
-        .chat-form {
-            display: flex;
-            padding: 20px;
-            border-top: 1px solid #eee;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="text"]:focus {
-            border-color: #6e8efb;
-            outline: none;
-            box-shadow: 0 0 5px rgba(110, 142, 251, 0.3);
-        }
-
-        button {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(110, 142, 251, 0.4);
-        }
-
-        .new-chat-button {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-        }
-
-        .new-chat-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-        }
-
-        .logout-form {
-            padding: 10px 20px;
-            border-bottom: 1px solid #eee;
-            text-align: center;
-        }
-
-        .logout-button {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .logout-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
-        }
-    </style>
+    <link rel="stylesheet" href="/styles.css" th:href="@{/styles.css}">
 </head>
 <body>
+    <svg>
+        <filter id="wave-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </svg>
+    <div class="wave-layer"></div>
+    <div class="theme-selector">
+        <label for="color-theme" style="font-size: 14px; color: var(--text-color);">Color Theme:</label>
+        <select id="color-theme" onchange="changeColorTheme()">
+            <option value="ocean">Ocean</option>
+            <option value="space">Space</option>
+        </select>
+    </div>
     <div id="chat-container">
         <div class="logout-form">
             <form th:action="@{/logout}" method="post">
-                <button type="submit" class="logout-button">Logout</button>
+                <button type="submit" class="logout-button" data-tooltip="Sign out of your account">Logout</button>
             </form>
         </div>
-        <h1>AI Chat</h1>
+        <h1 class="chat-title">AI Chat</h1>
+        <div th:if="${success}" class="success" th:text="${success}"></div>
+        <div class="text-size-control">
+            <label for="text-size-slider" style="font-size: 14px; color: var(--text-color);">Text Size:</label>
+            <input type="range" id="text-size-slider" min="10" max="20" value="14" oninput="adjustTextSize(this.value)" style="width: 150px; margin: 10px 20px;" onchange="applyTextSize(this.value)">
+        </div>
+        <button onclick="copyChat()" class="btn-primary copy-chat-button" data-tooltip="Copy the entire chat to clipboard">Copy Chat</button>
+        <div class="message-animation-selector">
+            <label for="message-animation" style="font-size: 14px; color: var(--text-color);">Message Animation:</label>
+            <select id="message-animation" onchange="changeMessageAnimation()">
+                <option value="slide-left">Slide Left</option>
+                <option value="drop-down">Drop Down</option>
+                <option value="fade-in">Fade In</option>
+            </select>
+        </div>
         <div id="chat-messages">
             <div th:each="message : ${messages}" th:class="${message.sender == 'user' ? 'message user-message' : 'message bot-message'}">
                 <span th:text="${message.text}"></span>
             </div>
         </div>
-        <div id="typing-indicator">Bot is typing...</div>
+        <div id="typing-indicator"><span>.</span><span>.</span><span>.</span></div>
         <div class="chat-form">
             <form id="chat-form" th:action="@{/chat}" method="post">
                 <input type="hidden" name="chatId" th:value="${chat.id}">
                 <input type="text" id="user-message" name="userMessage" placeholder="Enter your message..." required>
-                <button type="submit">Send</button>
+                <button type="submit" data-tooltip="Send your message">Send</button>
             </form>
             <form th:action="@{/chat/new}" method="post" style="display: inline;">
-                <button type="submit" class="new-chat-button">New Chat</button>
+                <button type="submit" class="new-chat-button" data-tooltip="Start a new chat session">New Chat</button>
             </form>
         </div>
     </div>
 
     <script>
+        let messageAnimation = localStorage.getItem('messageAnimation') || 'slide-left';
+
+        function changeColorTheme() {
+            const theme = document.getElementById('color-theme').value;
+            document.body.classList.remove('ocean-theme', 'space-theme');
+            if (theme !== 'ocean') {
+                document.body.classList.add(theme + '-theme');
+            }
+            localStorage.setItem('colorTheme', theme);
+        }
+
+        function copyChat() {
+            const chatMessages = document.getElementById('chat-messages');
+            const messages = chatMessages.getElementsByClassName('message');
+            let chatText = '';
+            for (let message of messages) {
+                const sender = message.classList.contains('user-message') ? 'You' : 'Bot';
+                const text = message.querySelector('span').innerText;
+                chatText += `${sender}: ${text}\n`;
+            }
+            navigator.clipboard.writeText(chatText).then(() => {
+                alert('Chat copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy chat: ', err);
+            });
+        }
+
+        function adjustTextSize(size) {
+            const messages = document.getElementsByClassName('message');
+            for (let message of messages) {
+                message.style.fontSize = `${size}px`;
+            }
+            const typingIndicator = document.getElementById('typing-indicator');
+            typingIndicator.style.fontSize = `${size}px`;
+        }
+
+        function applyTextSize(size) {
+            adjustTextSize(size);
+        }
+
+        function changeMessageAnimation() {
+            messageAnimation = document.getElementById('message-animation').value;
+            localStorage.setItem('messageAnimation', messageAnimation);
+            applyMessageAnimations();
+        }
+
+        function applyMessageAnimations() {
+            const messages = document.getElementsByClassName('message');
+            for (let message of messages) {
+                message.classList.remove('message-slide-left', 'message-drop-down', 'message-fade-in');
+                message.classList.add(`message-${messageAnimation}`);
+            }
+        }
+
+        const savedColorTheme = localStorage.getItem('colorTheme') || 'ocean';
+        document.getElementById('color-theme').value = savedColorTheme;
+        if (savedColorTheme !== 'ocean') {
+            document.body.classList.add(savedColorTheme + '-theme');
+        }
+
+        document.getElementById('message-animation').value = messageAnimation;
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.width = `${Math.random() * 5 + 2}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.animationDuration = `${Math.random() * 10 + 10}s`;
+            document.body.appendChild(particle);
+
+            setTimeout(() => {
+                particle.remove();
+            }, 20000);
+        }
+
+        setInterval(createParticle, 500);
+
+        function createBubble(x, y) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('particle');
+            bubble.style.width = `${Math.random() * 10 + 5}px`;
+            bubble.style.height = bubble.style.width;
+            bubble.style.left = `${x}px`;
+            bubble.style.top = `${y}px`;
+            bubble.style.animation = 'bubbleRise 5s ease-out forwards';
+            document.body.appendChild(bubble);
+
+            setTimeout(() => {
+                bubble.remove();
+            }, 5000);
+        }
+
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 5; i++) {
+                createBubble(e.clientX + (Math.random() * 20 - 10), e.clientY + (Math.random() * 20 - 10));
+            }
+        });
+
         const form = document.getElementById('chat-form');
         const typingIndicator = document.getElementById('typing-indicator');
         const chatMessages = document.getElementById('chat-messages');
 
         form.addEventListener('submit', function () {
-            typingIndicator.style.display = 'block';
+            typingIndicator.classList.add('active');
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
         window.onload = function() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            applyMessageAnimations();
         };
     </script>
 </body>

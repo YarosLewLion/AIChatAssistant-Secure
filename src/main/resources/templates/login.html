@@ -5,129 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            overflow: hidden;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .error {
-            color: #e74c3c;
-            background-color: #ffe6e6;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            font-size: 14px;
-        }
-
-        .success {
-            color: #2ecc71;
-            background-color: #e6ffe6;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            font-size: 14px;
-        }
-
-        label {
-            display: block;
-            text-align: left;
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 8px;
-        }
-
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="text"]:focus, input[type="password"]:focus {
-            border-color: #6e8efb;
-            outline: none;
-            box-shadow: 0 0 5px rgba(110, 142, 251, 0.3);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(110, 142, 251, 0.4);
-        }
-
-        p {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #555;
-        }
-
-        a {
-            color: #6e8efb;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-
-        a:hover {
-            color: #a777e3;
-        }
-    </style>
+    <link rel="stylesheet" href="/styles.css" th:href="@{/styles.css}">
 </head>
 <body>
+    <svg>
+        <filter id="wave-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </svg>
+    <div class="wave-layer"></div>
+    <div class="theme-selector">
+        <select id="color-theme" onchange="changeColorTheme()">
+            <option value="ocean">Ocean</option>
+            <option value="space">Space</option>
+        </select>
+    </div>
     <div class="container">
         <h1>Login</h1>
         <div th:if="${param.error}" class="error">Invalid username or password. Please try again.</div>
         <div th:if="${param.logout}" class="success">You have successfully logged out.</div>
+        <div th:if="${success}" class="success" th:text="${success}"></div>
         <form th:action="@{/login}" method="post">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
@@ -135,9 +33,63 @@
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
 
-            <button type="submit">Login</button>
+            <button type="submit" data-tooltip="Sign in to your account">Login</button>
         </form>
         <p>Don't have an account? <a th:href="@{/register}">Register</a></p>
     </div>
+
+    <script>
+        function changeColorTheme() {
+            const theme = document.getElementById('color-theme').value;
+            document.body.classList.remove('ocean-theme', 'space-theme');
+            if (theme !== 'ocean') {
+                document.body.classList.add(theme + '-theme');
+            }
+            localStorage.setItem('colorTheme', theme);
+        }
+
+        const savedColorTheme = localStorage.getItem('colorTheme') || 'ocean';
+        document.getElementById('color-theme').value = savedColorTheme;
+        if (savedColorTheme !== 'ocean') {
+            document.body.classList.add(savedColorTheme + '-theme');
+        }
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.width = `${Math.random() * 5 + 2}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.animationDuration = `${Math.random() * 10 + 10}s`;
+            document.body.appendChild(particle);
+
+            setTimeout(() => {
+                particle.remove();
+            }, 20000);
+        }
+
+        setInterval(createParticle, 500);
+
+        function createBubble(x, y) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('particle');
+            bubble.style.width = `${Math.random() * 10 + 5}px`;
+            bubble.style.height = bubble.style.width;
+            bubble.style.left = `${x}px`;
+            bubble.style.top = `${y}px`;
+            bubble.style.animation = 'bubbleRise 5s ease-out forwards';
+            document.body.appendChild(bubble);
+
+            setTimeout(() => {
+                bubble.remove();
+            }, 5000);
+        }
+
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 5; i++) {
+                createBubble(e.clientX + (Math.random() * 20 - 10), e.clientY + (Math.random() * 20 - 10));
+            }
+        });
+    </script>
 </body>
 </html>

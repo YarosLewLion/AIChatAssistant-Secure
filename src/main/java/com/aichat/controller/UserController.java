@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class UserController {
@@ -27,9 +28,10 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public String registerUser(User user, Model model) {
+    public String registerUser(User user, Model model, RedirectAttributes redirectAttributes) {
         try {
             userService.registerUser(user);
+            redirectAttributes.addFlashAttribute("success", "Account created successfully!");
             return "redirect:/login";
         } catch (Exception e) {
             model.addAttribute("error", "Ошибка при регистрации: " + e.getMessage());

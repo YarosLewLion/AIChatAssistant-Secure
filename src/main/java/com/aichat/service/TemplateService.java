@@ -2,15 +2,20 @@ package com.aichat.service;
 
 import com.aichat.entity.Template;
 import com.aichat.repository.TemplateRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class TemplateService {
-    @Autowired
-    private TemplateRepository templateRepository;
+
+    private final TemplateRepository templateRepository;
+
+    public TemplateService(TemplateRepository templateRepository) {
+        this.templateRepository = templateRepository;
+    }
 
     public void saveTemplate(Template template) {
         templateRepository.save(template);
