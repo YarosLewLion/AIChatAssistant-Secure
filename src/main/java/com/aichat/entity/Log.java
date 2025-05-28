@@ -20,7 +20,7 @@ public class Log {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
-    @Column(name = "action")
+    @Column(name = "action", columnDefinition = "TEXT")
     private String action;
 
     @Column(name = "timestamp")

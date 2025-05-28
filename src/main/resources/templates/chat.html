@@ -3,9 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
     <title>AI Chat</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css" th:href="@{/styles.css}">
+    <style>
+        .admin-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .admin-button:hover {
+            background-color: #e60000;
+        }
+    </style>
 </head>
 <body>
     <svg>
@@ -15,6 +34,11 @@
         </filter>
     </svg>
     <div class="wave-layer"></div>
+
+    <div sec:authorize="hasRole('USER')">
+        <button class="admin-button" onclick="promptForAdminPassword()">ADMIN?</button>
+    </div>
+
     <div class="theme-selector">
         <label for="color-theme" style="font-size: 14px; color: var(--text-color);">Color Theme:</label>
         <select id="color-theme" onchange="changeColorTheme()">
@@ -182,6 +206,33 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
             applyMessageAnimations();
         };
+
+        function promptForAdminPassword() {
+            const password = prompt("Enter admin password:");
+            if (password) {
+                fetch('/chat/grant-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ password: password })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("You are now an admin! Please refresh the page.");
+                        window.location.reload();
+                    } else {
+                        alert("Incorrect password. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred. Please try again.");
+                });
+            }
+        }
     </script>
 </body>
 </html>

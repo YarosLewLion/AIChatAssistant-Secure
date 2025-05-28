@@ -2,20 +2,28 @@ package com.aichat.controller;
 
 import com.aichat.entity.Chat;
 import com.aichat.entity.User;
+import com.aichat.repository.UserRepository;
 import com.aichat.service.ChatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
+@RequestMapping("/chat")
 public class ChatController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
@@ -23,7 +31,10 @@ public class ChatController {
     @Autowired
     private ChatService chatService;
 
-    @GetMapping("/chat")
+    @Autowired
+    private UserRepository userRepository;
+
+    @GetMapping("")
     public String chat(Model model, @AuthenticationPrincipal User user) {
         logger.debug("Accessing chats for user: {}", user.getUsername());
         List<Chat> chats = chatService.getUserChats(user);
@@ -37,7 +48,7 @@ public class ChatController {
         return "chat";
     }
 
-    @PostMapping("/chat")
+    @PostMapping("")
     public String sendMessage(
             @RequestParam("id") Long chatId,
             @RequestParam("message") String message,
@@ -63,7 +74,7 @@ public class ChatController {
         return "chat";
     }
 
-    @PostMapping("/chat/new")
+    @PostMapping("/new")
     public String newChat(@AuthenticationPrincipal User user, Model model) {
         logger.debug("Starting a new chat for user: {}", user.getUsername());
         Chat newChat = chatService.startNewChat(user);
@@ -72,7 +83,7 @@ public class ChatController {
         return "chat";
     }
 
-    @PostMapping("/chat/end")
+    @PostMapping("/end")
     public String endChat(@RequestParam("id") Long chatId, @AuthenticationPrincipal User user, Model model) {
         logger.debug("Ending chat with ID: {} for user: {}", chatId, user.getUsername());
         try {
@@ -99,5 +110,43 @@ public class ChatController {
             model.addAttribute("error", "Something went wrong while ending the chat. Please try again.");
             return "home";
         }
+    }
+
+    @PostMapping("/grant-admin")
+    @ResponseBody
+    public ResponseEntity<Map<String, Boolean>> grantAdminRole(@RequestBody Map<String, String> request) {
+        String password = request.get("password");
+        Map<String, Boolean> response = new HashMap<>();
+
+        if ("Kingdom Hearts".equals(password)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+            String currentRoles = user.getRoles();
+            if (currentRoles.contains("ROLE_ADMIN")) {
+                response.put("success", true);
+                logger.info("User {} is already an admin.", username);
+            } else {
+                user.setRoles("ROLE_ADMIN");
+                userRepository.save(user);
+                logger.info("User {} has been granted admin role.", username);
+
+                Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                    user,
+                    authentication.getCredentials(),
+                    user.getAuthorities()
+                );
+                SecurityContextHolder.getContext().setAuthentication(newAuth);
+
+                response.put("success", true);
+            }
+        } else {
+            logger.warn("Incorrect admin password attempt for user: {}", SecurityContextHolder.getContext().getAuthentication().getName());
+            response.put("success", false);
+        }
+
+        return ResponseEntity.ok(response);
     }
 }
