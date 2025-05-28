@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,10 +25,15 @@
     <div id="chat-container">
         <div class="logout-form">
             <form th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <button type="submit" class="logout-button" data-tooltip="Sign out of your account">Logout</button>
             </form>
+            <a href="/home" class="nav-button" data-tooltip="Go to Home page">Home</a>
+            <a href="/admin/users" sec:authorize="hasRole('ROLE_ADMIN')" class="nav-button" data-tooltip="Manage users (Admin)">Manage users</a>
+            <a href="/admin/logs" sec:authorize="hasRole('ROLE_ADMIN')" class="nav-button" data-tooltip="View logs (Admin)">View logs</a>
+            <a href="/admin/statistics" sec:authorize="hasRole('ROLE_ADMIN')" class="nav-button" data-tooltip="View statistics (Admin)">View statistics</a>
         </div>
-        <h1 class="chat-title">AI Chat</h1>
+        <h1 class="chat-title">Chat ID: <span th:text="${chat.id}"></span></h1>
         <div th:if="${success}" class="success" th:text="${success}"></div>
         <div class="text-size-control">
             <label for="text-size-slider" style="font-size: 14px; color: var(--text-color);">Text Size:</label>
@@ -44,18 +49,21 @@
             </select>
         </div>
         <div id="chat-messages">
-            <div th:each="message : ${messages}" th:class="${message.sender == 'user' ? 'message user-message' : 'message bot-message'}">
+            <div th:each="message : ${chat.messages}" 
+                 th:class="${message.sender == 'user' ? 'message user-message' : 'message bot-message'}">
                 <span th:text="${message.text}"></span>
             </div>
         </div>
         <div id="typing-indicator"><span>.</span><span>.</span><span>.</span></div>
-        <div class="chat-form">
+        <div class="chat-form" th:if="${chat.endTime == null}">
             <form id="chat-form" th:action="@{/chat}" method="post">
-                <input type="hidden" name="chatId" th:value="${chat.id}">
-                <input type="text" id="user-message" name="userMessage" placeholder="Enter your message..." required>
+                <input type="hidden" name="id" th:value="${chat.id}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="text" id="user-message" name="message" placeholder="Enter your message..." required>
                 <button type="submit" data-tooltip="Send your message">Send</button>
             </form>
             <form th:action="@{/chat/new}" method="post" style="display: inline;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <button type="submit" class="new-chat-button" data-tooltip="Start a new chat session">New Chat</button>
             </form>
         </div>

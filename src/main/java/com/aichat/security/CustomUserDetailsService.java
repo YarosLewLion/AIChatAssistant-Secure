@@ -16,14 +16,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("Попытка загрузки пользователя: " + username);
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            System.out.println("Пользователь не найден: " + username);
-            throw new UsernameNotFoundException("Пользователь не найден: " + username);
-        }
-        System.out.println("Пользователь найден: " + user.getUsername());
-        System.out.println("Зашифрованный пароль в базе: " + user.getPassword());
+        System.out.println("Attempting to load user: " + username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    System.out.println("User not found: " + username);
+                    return new UsernameNotFoundException("User not found: " + username);
+                });
+        System.out.println("User found: " + user.getUsername());
+        System.out.println("Encrypted password in database: " + user.getPassword());
         return user;
     }
 }

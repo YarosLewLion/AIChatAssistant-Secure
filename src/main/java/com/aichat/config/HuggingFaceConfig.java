@@ -1,20 +1,25 @@
 package com.aichat.config;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+   import org.springframework.beans.factory.annotation.Value;
+   import org.springframework.context.annotation.Configuration;
+   import org.slf4j.Logger;
+   import org.slf4j.LoggerFactory;
 
-@Configuration
-@ConfigurationProperties(prefix = "huggingface")
-@Data
-public class HuggingFaceConfig {
+   @Configuration
+   public class HuggingFaceConfig {
 
-    private String apiKey;
+       private static final Logger logger = LoggerFactory.getLogger(HuggingFaceConfig.class);
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-}
+       @Value("${xai-api-key:}")
+       private String xaiApiKey;
+
+       public HuggingFaceConfig() {
+           logger.info("xAI API key loaded from Spring property (xai-api-key): {}", xaiApiKey);
+           logger.info("XAI_API_KEY from System.getenv: {}", System.getenv("XAI_API_KEY"));
+           logger.info("xai-api-key from System.getProperty: {}", System.getProperty("xai-api-key"));
+       }
+
+       public String getXaiApiKey() {
+           return xaiApiKey;
+       }
+   }

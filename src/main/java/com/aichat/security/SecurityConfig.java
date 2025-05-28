@@ -22,7 +22,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/login", "/register", "/admin/users", "/admin/users/delete/**", "/styles.css", "/css/**", "/js/**", "/resources/**", "/static/**").permitAll()
+                .requestMatchers("/login", "/register", "/styles.css", "/css/**", "/js/**", "/resources/**", "/static/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -35,8 +36,7 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
             )
-            .userDetailsService(customUserDetailsService)
-            .csrf(csrf -> csrf.disable());
+            .userDetailsService(customUserDetailsService);
         return http.build();
     }
 
