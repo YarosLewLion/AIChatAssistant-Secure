@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional
 public class TemplateService {
 
     private final TemplateRepository templateRepository;
@@ -17,14 +16,17 @@ public class TemplateService {
         this.templateRepository = templateRepository;
     }
 
+    @Transactional
     public void saveTemplate(Template template) {
         templateRepository.save(template);
     }
 
+    @Transactional(readOnly = true)
     public List<Template> getAllTemplates() {
         return templateRepository.findAll();
     }
 
+    @Transactional
     public void deleteTemplate(Long id) {
         templateRepository.deleteById(id);
     }

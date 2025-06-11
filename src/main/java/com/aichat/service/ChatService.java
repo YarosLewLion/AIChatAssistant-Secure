@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional
 public class ChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
@@ -43,21 +42,24 @@ public class ChatService {
                        LogRepository logRepository,
                        UserRepository userRepository,
                        RestTemplate restTemplate,
-                       HuggingFaceConfig huggingFaceConfig) {
+                       HuggingFaceConfig huggingFaceConfig,
+                       ObjectMapper objectMapper) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.logRepository = logRepository;
         this.userRepository = userRepository;
         this.restTemplate = restTemplate;
         this.huggingFaceConfig = huggingFaceConfig;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<Chat> getUserChats(User user) {
         logger.debug("Fetching chats for user: {}", user.getUsername());
         return chatRepository.findByUser(user);
     }
 
+    @Transactional
     public Chat startNewChat(User user) {
         logger.debug("Starting new chat for user: {}", user.getUsername());
         User managedUser = userRepository.findByUsername(user.getUsername())
@@ -69,6 +71,7 @@ public class ChatService {
         return savedChat;
     }
 
+    @Transactional
     public void saveMessage(Chat chat, String sender, String text) {
         logger.debug("Saving message for chat ID: {}. Sender: {}, Text: {}", chat.getId(), sender, text);
         Message message = new Message(chat, sender, text);
@@ -79,6 +82,7 @@ public class ChatService {
         logger.debug("Message saved successfully");
     }
 
+    @Transactional
     public void endChat(Chat chat) {
         logger.debug("Ending chat with ID: {}", chat.getId());
         chat.setEndTime(LocalDateTime.now());
@@ -129,6 +133,7 @@ public class ChatService {
         }
     }
 
+    @Transactional
     private void logAction(User user, String action) {
         logger.debug("Logging action for user {}: {}", user.getUsername(), action);
         Log log = new Log();

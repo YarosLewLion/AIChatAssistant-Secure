@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Transactional
 public class StatisticsService {
 
     private final UserRepository userRepository;
@@ -32,6 +31,7 @@ public class StatisticsService {
         this.userSessionRepository = userSessionRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getStatistics() {
         List<Map<String, Object>> statistics = new ArrayList<>();
 
@@ -54,6 +54,7 @@ public class StatisticsService {
         return statistics;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Long> getOverallStatistics() {
         Map<String, Long> stats = new HashMap<>();
         stats.put("totalUsers", userRepository.count());
